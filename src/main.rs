@@ -1,32 +1,52 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use std::time::Duration;
 
 fn main() -> Result<()> {
+    let mut command = String::new();
+    let mut action: Option<Action> = None;
+
     'main: loop {
-        if !handle_user_input()? {
-            break 'main;
+        handle_user_input(&mut command, &mut action)?;
+
+        match action {
+            Some(Action::ProcessCommand) => {
+                println!();
+                command.clear();
+            }
+            Some(Action::Exit) => break 'main,
+            None => {}
         }
+
+        action = None;
     }
 
     Ok(())
 }
 
 // Function to handle user input
-fn handle_user_input() -> Result<bool> {
-    let mut result = Ok(true);
-
-    if event::poll(Duration::default())? {
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Release {
-                match key.code {
-                    KeyCode::Esc => result = Ok(false),   // Exit the loop
-                    KeyCode::Char(c) => eprint!("{}", c), // Print input
-                    _ => {}
-                };
+fn handle_user_input(command: &mut String, action: &mut Option<Action>) -> Result<()> {
+    if let Event::Key(key) = event::read()? {
+        if key.kind == KeyEventKind::Release {
+            match key.code {
+                KeyCode::Esc => *action = Some(Action::Exit),
+                KeyCode::Char(c) => {
+                    eprint!("{}", c);
+                    (*command).push(c);
+                }
+                KeyCode::Backspace => {
+                    eprint!("\x1b[D \x1b[D");
+                    (*command).pop();
+                }
+                KeyCode::Enter => *action = Some(Action::ProcessCommand),
+                _ => {}
             }
         }
     }
 
-    result
+    Ok(())
+}
+
+enum Action {
+    ProcessCommand,
+    Exit,
 }
