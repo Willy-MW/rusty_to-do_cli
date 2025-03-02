@@ -3,32 +3,29 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 fn main() -> Result<()> {
     let mut command = String::new();
-    let mut action: Option<Action> = None;
 
     'main: loop {
-        handle_user_input(&mut command, &mut action)?;
-
-        match action {
+        match handle_user_input(&mut command)? {
             Some(Action::ProcessCommand) => {
-                println!();
+                process_command(&command)?;
                 command.clear();
             }
             Some(Action::Exit) => break 'main,
             None => {}
         }
-
-        action = None;
     }
 
     Ok(())
 }
 
 // Function to handle user input
-fn handle_user_input(command: &mut String, action: &mut Option<Action>) -> Result<()> {
+fn handle_user_input(command: &mut String) -> Result<Option<Action>> {
+    let mut action: Option<Action> = None;
+
     if let Event::Key(key) = event::read()? {
         if key.kind == KeyEventKind::Release {
             match key.code {
-                KeyCode::Esc => *action = Some(Action::Exit),
+                KeyCode::Esc => action = Some(Action::Exit),
                 KeyCode::Char(c) => {
                     eprint!("{}", c);
                     (*command).push(c);
@@ -37,10 +34,29 @@ fn handle_user_input(command: &mut String, action: &mut Option<Action>) -> Resul
                     eprint!("\x1b[D \x1b[D");
                     (*command).pop();
                 }
-                KeyCode::Enter => *action = Some(Action::ProcessCommand),
+                KeyCode::Enter => action = Some(Action::ProcessCommand),
                 _ => {}
             }
         }
+    }
+
+    Ok(action)
+}
+
+fn process_command(command: &str) -> Result<()> {
+    println!("Processing command: {}", command);
+
+    let command  = command.split(' ').next();
+
+    if command.is_none() {
+        return Ok(());
+    }
+
+    match command {
+        So
+        "complete" => println!("Complete"),
+        "delete" => println!("Delete"),
+        _ => println!("Unknown command: {}", command),
     }
 
     Ok(())
