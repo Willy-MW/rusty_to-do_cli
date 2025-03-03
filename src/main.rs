@@ -23,7 +23,7 @@ fn handle_user_input(command: &mut String) -> Result<Option<Action>> {
     let mut action: Option<Action> = None;
 
     if let Event::Key(key) = event::read()? {
-        if key.kind == KeyEventKind::Release {
+        if key.kind == KeyEventKind::Press {
             match key.code {
                 KeyCode::Esc => action = Some(Action::Exit),
                 KeyCode::Char(c) => {
@@ -34,7 +34,10 @@ fn handle_user_input(command: &mut String) -> Result<Option<Action>> {
                     eprint!("\x1b[D \x1b[D");
                     (*command).pop();
                 }
-                KeyCode::Enter => action = Some(Action::ProcessCommand),
+                KeyCode::Enter => {
+                    println!();
+                    action = Some(Action::ProcessCommand)
+                }
                 _ => {}
             }
         }
@@ -46,17 +49,14 @@ fn handle_user_input(command: &mut String) -> Result<Option<Action>> {
 fn process_command(command: &str) -> Result<()> {
     println!("Processing command: {}", command);
 
-    let command  = command.split(' ').next();
-
-    if command.is_none() {
+    let Some(cmd) = command.split(' ').next() else {
         return Ok(());
-    }
+    };
 
-    match command {
-        So
+    match cmd {
         "complete" => println!("Complete"),
         "delete" => println!("Delete"),
-        _ => println!("Unknown command: {}", command),
+        _ => println!("Unknown command: {}", cmd),
     }
 
     Ok(())
