@@ -1,5 +1,9 @@
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use std::fmt::Display;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+static COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 fn main() -> Result<()> {
     let mut input = String::new();
@@ -76,21 +80,55 @@ fn get_argument(input: &str, is_command: bool) -> &str {
     }
 }
 
+fn create_task(description: &str) -> Option<Task> {
+    if description.is_empty() {
+        None
+    } else {
+        Some(Task::new(description))
+    }
+}
+
 fn complete_task(number: isize) {
     println!("Completed task #{}", number);
+}
+
+fn undo_task(number: isize) {
+    println!("Undo task #{}", number);
 }
 
 fn delete_task(number: isize) {
     println!("Deleted task #{}", number);
 }
 
+#[derive(PartialEq, Debug)]
 enum Action {
     ProcessInput,
     Exit,
 }
 
+#[derive(PartialEq, Debug)]
 enum Command {
     Complete,
     Undo,
     Delete,
+}
+#[derive(PartialEq, Debug)]
+struct Task {
+    id: usize,
+    description: String,
+}
+
+impl Task {
+    fn new(description: &str) -> Self {
+        Self {
+            id: COUNTER.fetch_add(1, Ordering::Relaxed),
+            description: description.to_string(),
+        }
+    }
+}
+
+impl Display for Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "{}. {}", self.id, self.description)
+    }
 }
