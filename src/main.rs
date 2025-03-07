@@ -72,16 +72,9 @@ fn process_input(input: &str, task_list: &mut TaskList) -> Result<()> {
 }
 
 fn get_command(input: &str) -> Option<Command> {
-    let mut input_iter = input.split_whitespace();
+    let command = input.split_whitespace().next()?;
 
-    let command = input_iter.next()?;
-
-    match command.to_lowercase().as_str() {
-        "/complete" => Some(Command::Complete),
-        "/undo" => Some(Command::Undo),
-        "/delete" => Some(Command::Delete),
-        _ => None,
-    }
+    Command::try_from(command).ok()
 }
 
 fn get_argument(input: &str, is_command: bool) -> &str {
@@ -104,6 +97,19 @@ enum Command {
     Undo,
     Delete,
 }
+
+impl TryFrom<&str> for Command {
+    type Error = &'static str;
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+        match value {
+            "/complete" => Ok(Command::Complete),
+            "/undo" => Ok(Command::Undo),
+            "/delete" => Ok(Command::Delete),
+            _ => Err("Unknown command"),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 struct Task {
     id: usize,
@@ -147,26 +153,41 @@ impl TaskList {
         let task = Task::new(description);
         let task_id = task.id;
 
-        if self.todo.len() < task_id {
-            self.todo.push(task);
-        } else {
-            self.todo.insert(task_id - 1, task);
-        }
-
-        println!("Created task #{}", task_id);
+        self.add_task(task);
 
         task_id
     }
 
-    fn complete_task(&mut self, number: usize) {
-        println!("Completed task #{}", number);
+    fn add_task(&mut self, task: Task) {
+        if self.todo.len() < task.id {
+            self.todo.push(task);
+        } else {
+            self.todo.insert(task.id - 1, task);
+        }
     }
 
-    fn undo_task(&mut self, number: usize) {
-        println!("Undo task #{}", number);
+    fn complete_task(&mut self, task_id: usize) {
+        if let Some(task) = TaskList::remove_task(&mut self.todo, task_id) {
+            self.completed.push(task);
+        }
     }
 
-    fn delete_task(&mut self, number: usize) {
-        println!("Deleted task #{}", number);
+    fn undo_task(&mut self, task_id: usize) {
+        if let Some(task) = TaskList::remove_task(&mut self.completed, task_id) {
+            self.add_task(task);
+        }
+    }
+
+    fn delete_task(&mut self, task_id: usize) {
+        if TaskList::remove_task(&mut self.todo, task_id).is_some() {
+            return;
+        }
+        TaskList::remove_task(&mut self.completed, task_id);
+    }
+
+    fn remove_task(tasks: &mut Vec<Task>, task_id: usize) -> Option<Task> {
+        let index = tasks.iter().position(|task| task.id == task_id)?;
+
+        Some(tasks.remove(index))
     }
 }
