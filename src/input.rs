@@ -1,7 +1,34 @@
 ﻿use crate::task_list::TaskList;
 use anyhow::Result;
-use crossterm::event;
 use crossterm::event::{Event, KeyCode, KeyEventKind};
+use crossterm::terminal::{Clear, ClearType};
+use crossterm::{event, execute};
+use std::io::stdout;
+
+#[derive(PartialEq, Debug)]
+pub enum Action {
+    ProcessInput,
+    Exit,
+}
+
+#[derive(PartialEq, Debug)]
+enum Command {
+    Complete,
+    Undo,
+    Delete,
+}
+
+impl TryFrom<&str> for Command {
+    type Error = &'static str;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "/complete" => Ok(Command::Complete),
+            "/undo" => Ok(Command::Undo),
+            "/delete" => Ok(Command::Delete),
+            _ => Err("Unknown command"),
+        }
+    }
+}
 
 pub fn handle_user_input(input: &mut String) -> Result<Option<Action>> {
     let mut action: Option<Action> = None;
@@ -18,10 +45,7 @@ pub fn handle_user_input(input: &mut String) -> Result<Option<Action>> {
                     eprint!("\x1b[D \x1b[D");
                     (*input).pop();
                 }
-                KeyCode::Enter => {
-                    println!();
-                    action = Some(Action::ProcessInput)
-                }
+                KeyCode::Enter => action = Some(Action::ProcessInput),
                 _ => {}
             }
         }
@@ -64,27 +88,6 @@ fn get_argument(input: &str, is_command: bool) -> &str {
     }
 }
 
-#[derive(PartialEq, Debug)]
-pub enum Action {
-    ProcessInput,
-    Exit,
-}
-
-#[derive(PartialEq, Debug)]
-pub enum Command {
-    Complete,
-    Undo,
-    Delete,
-}
-
-impl TryFrom<&str> for Command {
-    type Error = &'static str;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "/complete" => Ok(Command::Complete),
-            "/undo" => Ok(Command::Undo),
-            "/delete" => Ok(Command::Delete),
-            _ => Err("Unknown command"),
-        }
-    }
+pub fn clear_screen() {
+    execute!(stdout(), Clear(ClearType::All)).unwrap();
 }
