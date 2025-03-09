@@ -1,73 +1,15 @@
-﻿use crate::task_list::TaskList;
+﻿use crate::command::Command;
+use crate::task_list::TaskList;
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{Clear, ClearType};
 use crossterm::{event, execute};
-use std::fmt::Display;
 use std::io::stdout;
 
 #[derive(PartialEq, Debug)]
 pub enum Action {
     ProcessInput,
     Exit,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-enum Command {
-    Complete,
-    Undo,
-    Delete,
-    Help,
-}
-
-impl TryFrom<&str> for Command {
-    type Error = &'static str;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "/help" => Ok(Command::Help),
-            "/do" => Ok(Command::Complete),
-            "/undo" => Ok(Command::Undo),
-            "/delete" => Ok(Command::Delete),
-            _ => Err("Unknown command"),
-        }
-    }
-}
-
-impl From<Command> for &'static str {
-    fn from(command: Command) -> Self {
-        match command {
-            Command::Help => "/help",
-            Command::Complete => "/complete",
-            Command::Undo => "/undo",
-            Command::Delete => "/delete",
-        }
-    }
-}
-
-impl Display for Command {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let as_str: &str = self.clone().into();
-        write!(f, "{}", as_str)
-    }
-}
-
-impl Command {
-    fn get_all() -> Vec<Command> {
-        Vec::from([
-            Command::Help,
-            Command::Complete,
-            Command::Delete,
-            Command::Undo,
-        ])
-    }
-    pub fn get_description(&self) -> &str {
-        match self {
-            Command::Help => "Lists all commands.",
-            Command::Complete => "Marks task as completed and moves it into completed tasks list.",
-            Command::Undo => "Moves task back from completed tasks list into todo list.",
-            Command::Delete => "Deletes the task.",
-        }
-    }
 }
 
 pub fn handle_user_input(input: &mut String) -> Result<Option<Action>> {
@@ -121,7 +63,7 @@ pub fn process_input(input: &str, task_list: &mut TaskList) -> Result<()> {
 fn get_command(input: &str) -> Option<Command> {
     let command = input.split_whitespace().next()?;
 
-    Command::try_from(command).ok()
+    crate::command::Command::try_from(command).ok()
 }
 
 fn get_argument(input: &str, is_command: bool) -> &str {
